@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Controller func(http.ResponseWriter, *http.Request)
@@ -178,7 +179,7 @@ func (r *Router) ServeStaticFile(path string, middlewares []string, filePath str
 	})
 }
 
-func (r *Router) DownloadStatic(middlewares []string, dirPath string) {
+func (r *Router) DownloadStatic(mount string, middlewares []string, dirPath string) {
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		fmt.Println("Directory not found", dirPath)
 		return
@@ -187,7 +188,7 @@ func (r *Router) DownloadStatic(middlewares []string, dirPath string) {
 		if !info.IsDir() {
 			temp := filepath.Base(path)
 			temp1 := mime.TypeByExtension(filepath.Ext(temp))
-			r.Route("GET", "/"+path, middlewares, func(res http.ResponseWriter, req *http.Request) {
+			r.Route("GET", strings.Replace(path, dirPath, mount, 1), middlewares, func(res http.ResponseWriter, req *http.Request) {
 				res.Header().Set("Content-Disposition", "attachment; filename="+temp)
 				if temp1 != "" {
 					res.Header().Set("Content-Type", temp1)
@@ -201,7 +202,7 @@ func (r *Router) DownloadStatic(middlewares []string, dirPath string) {
 	})
 }
 
-func (r *Router) ServeStatic(middlewares []string, dirPath string) {
+func (r *Router) ServeStatic(mount string, middlewares []string, dirPath string) {
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		fmt.Println("Directory not found", dirPath)
 		return
@@ -210,7 +211,7 @@ func (r *Router) ServeStatic(middlewares []string, dirPath string) {
 		if !info.IsDir() {
 			temp := filepath.Base(path)
 			temp1 := mime.TypeByExtension(filepath.Ext(temp))
-			r.Route("GET", "/"+path, middlewares, func(res http.ResponseWriter, req *http.Request) {
+			r.Route("GET", strings.Replace(path, dirPath, mount, 1), middlewares, func(res http.ResponseWriter, req *http.Request) {
 				if temp1 != "" {
 					res.Header().Set("Content-Type", temp1)
 				}
