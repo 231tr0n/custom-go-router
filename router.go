@@ -18,19 +18,13 @@ type Middleware func(Controller) Controller
 
 type Router struct {
 	log         bool
-	ratelimit   bool
 	middlewares map[string]Middleware
 	routes      map[string]map[string]Controller
-	ratelimiter map[string]bool
 }
 
-func (r *Router) Init(log bool, ratelimit bool) {
+func (r *Router) Init(log bool) {
 	r.routes = make(map[string]map[string]Controller)
 	r.middlewares = make(map[string]Middleware)
-	r.ratelimit = ratelimit
-	if r.ratelimit {
-		r.ratelimiter = make(map[string]bool)
-	}
 	r.log = log
 	if r.log {
 		fmt.Println("Router Initialized.")
@@ -243,25 +237,9 @@ func (r Router) String() string {
 }
 
 func (r Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	if r.ratelimit {
-		_, ok := r.ratelimiter[req.RemoteAddr]
-		if ok {
-			for {
-				_, ok := r.ratelimiter[req.RemoteAddr]
-				if !ok {
-					break
-				}
-			}
-		}
-		r.ratelimiter[req.RemoteAddr] = true
-	}
 	r.match(req)(res, req)
-	if r.ratelimit {
-		delete(r.ratelimiter, req.RemoteAddr)
-	}
 	defer (func() {
 		if err := recover(); err != nil {
-			delete(r.ratelimiter, req.RemoteAddr)
 			fmt.Println("---------------")
 			fmt.Println(err)
 			fmt.Println("---------------")
